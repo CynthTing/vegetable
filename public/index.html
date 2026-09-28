@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173b2a">
+  <meta name="description" content="竹南冷凍公司倉儲管理系統，管理冷凍庫庫存、入庫、盤點與先進先出出貨。">
+  <title>竹南冷凍｜倉儲管理</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#inventory" aria-label="竹南冷凍倉儲首頁">
+        <span class="brand-seal">竹</span>
+        <span class="brand-copy"><strong>竹南冷凍</strong><small>倉儲管理系統</small></span>
+      </a>
+
+      <div class="nav-label">現場作業</div>
+      <nav class="primary-nav" aria-label="主要功能">
+        <button class="nav-link is-active" type="button" data-view="inventory" aria-current="page">
+          <span class="nav-index">01</span><span>庫存總覽</span>
+        </button>
+        <button class="nav-link" type="button" data-view="receipt">
+          <span class="nav-index">02</span><span>進貨入庫</span>
+        </button>
+        <button class="nav-link" type="button" data-view="shipment">
+          <span class="nav-index">03</span><span>出貨領料</span>
+        </button>
+        <button class="nav-link" type="button" data-view="count">
+          <span class="nav-index">04</span><span>定期盤點</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="live-dot"></span>
+        <span><strong>庫存資料已連線</strong><small>SQLite 本機資料庫</small></span>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="breadcrumb"><span>竹南冷凍</span><span class="breadcrumb-divider">/</span><span id="breadcrumb-current">庫存總覽</span></div>
+        <div class="topbar-date"><span class="date-mark"></span><time id="today-label"></time></div>
+      </header>
+
+      <section class="view is-visible" id="inventory-view" aria-labelledby="inventory-title">
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">WAREHOUSE / LIVE STOCK</p>
+            <h1 id="inventory-title">庫存總覽<span class="heading-period">。</span></h1>
+            <p class="heading-note">兩座冷凍庫，所有儲位一目了然。</p>
+          </div>
+          <button class="button button-outline" id="refresh-button" type="button"><span class="button-symbol" aria-hidden="true">↻</span>重新整理</button>
+        </div>
+
+        <div class="metric-strip" aria-label="庫存摘要">
+          <article class="metric metric-total"><span class="metric-label">目前在庫</span><div><strong id="total-quantity">—</strong><span class="metric-unit">箱</span></div><span class="metric-foot">兩倉合計</span></article>
+          <article class="metric"><span class="metric-label">蔬果品項</span><div><strong id="item-count">—</strong><span class="metric-unit">種</span></div><span class="metric-foot">有庫存的品項</span></article>
+          <article class="metric warehouse-metric"><span class="metric-label">一號冷凍庫</span><div><strong id="warehouse-one-total">—</strong><span class="metric-unit">箱</span></div><span class="metric-foot">儲位 A 區</span></article>
+          <article class="metric warehouse-metric"><span class="metric-label">二號冷凍庫</span><div><strong id="warehouse-two-total">—</strong><span class="metric-unit">箱</span></div><span class="metric-foot">儲位 B 區</span></article>
+        </div>
+
+        <div class="section-heading inventory-heading">
+          <div><p class="eyebrow">STOCK REGISTER</p><h2>現場儲位</h2></div>
+          <span class="record-count" id="record-count">載入中</span>
+        </div>
+        <div class="toolbar">
+          <label class="search-field"><span class="sr-only">搜尋品項或儲位</span><span class="search-symbol" aria-hidden="true">⌕</span><input id="inventory-search" type="search" placeholder="搜尋品項、儲位…"></label>
+          <label class="select-field"><span class="sr-only">篩選冷凍庫</span><select id="warehouse-filter"><option value="all">全部冷凍庫</option><option value="1">一號冷凍庫</option><option value="2">二號冷凍庫</option></select></label>
+        </div>
+        <div class="table-frame">
+          <table class="stock-table">
+            <thead><tr><th>品項 / 類別</th><th>冷凍庫</th><th>儲位</th><th>入庫時間</th><th class="number-cell">現存數量</th></tr></thead>
+            <tbody id="inventory-rows"><tr><td class="empty-cell" colspan="5">正在讀取庫存…</td></tr></tbody>
+          </table>
+          <div class="mobile-stock-list" id="mobile-inventory-rows"></div>
+        </div>
+
+        <section class="activity-section" aria-labelledby="activity-title">
+          <div class="section-heading"><div><p class="eyebrow">RECENT MOVEMENTS</p><h2 id="activity-title">最近異動</h2></div><span class="record-count">最多顯示 12 筆</span></div>
+          <div class="activity-list" id="activity-list"><p class="activity-empty">讀取異動紀錄中…</p></div>
+        </section>
+      </section>
+
+      <section class="view" id="receipt-view" aria-labelledby="receipt-title" hidden>
+        <div class="page-heading">
+          <div><p class="eyebrow">INBOUND / REGISTER</p><h1 id="receipt-title">進貨入庫<span class="heading-period">。</span></h1><p class="heading-note">新進貨品建立獨立批次，入庫時間用於先進先出。</p></div>
+          <span class="page-stamp">倉儲作業 <b>02</b></span>
+        </div>
+        <div class="operation-layout">
+          <form class="operation-form" id="receipt-form">
+            <div class="form-section-title"><span>01</span><h2>貨品資料</h2></div>
+            <label class="form-field"><span>蔬果品項</span><input name="itemName" list="item-options" maxlength="40" placeholder="例如：甘藍菜" required autocomplete="off"><datalist id="item-options"></datalist></label>
+            <div class="form-grid">
+              <label class="form-field"><span>分類</span><select name="category"><option value="蔬菜">蔬菜</option><option value="水果">水果</option></select></label>
+              <label class="form-field"><span>進貨箱數</span><input name="quantity" type="number" min="1" step="1" value="2" required></label>
+            </div>
+            <div class="form-section-title form-section-spaced"><span>02</span><h2>放置位置</h2></div>
+            <div class="form-grid">
+              <label class="form-field"><span>冷凍庫</span><select name="warehouseId" required><option value="1">一號冷凍庫</option><option value="2">二號冷凍庫</option></select></label>
+              <label class="form-field"><span>儲位代碼</span><input name="location" maxlength="30" placeholder="例如：A-07" required></label>
+            </div>
+            <label class="form-field"><span>實際入庫時間</span><input name="receivedAt" id="received-at" type="datetime-local" required></label>
+            <div class="form-actions"><button class="button button-primary" type="submit">確認入庫 <span aria-hidden="true">→</span></button><span class="form-hint">入庫後即更新兩倉庫存</span></div>
+          </form>
+          <aside class="operation-aside">
+            <span class="aside-number">02 / INBOUND</span>
+            <h2>每批貨，都有自己的位置與時間。</h2>
+            <p>同一品項可分批放置於不同儲位。系統會保留每批的入庫時間，出貨時自動優先提示較早入庫的批次。</p>
+            <div class="aside-rule"></div><span class="aside-caption">批次紀錄 · 儲位追蹤 · 即時更新</span>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="shipment-view" aria-labelledby="shipment-title" hidden>
+        <div class="page-heading">
+          <div><p class="eyebrow">OUTBOUND / FIFO PICKING</p><h1 id="shipment-title">出貨領料<span class="heading-period">。</span></h1><p class="heading-note">系統依入庫時間排序，從最早批次開始扣帳。</p></div>
+          <span class="page-stamp">倉儲作業 <b>03</b></span>
+        </div>
+        <div class="operation-layout">
+          <form class="operation-form" id="shipment-form">
+            <div class="form-section-title"><span>01</span><h2>選擇出貨品項</h2></div>
+            <label class="form-field"><span>蔬果品項</span><select name="itemId" id="shipment-item" required><option value="">請選擇品項</option></select></label>
+            <div class="fifo-suggestion" id="fifo-suggestion" aria-live="polite"><span class="fifo-tag">FIFO</span><span>選擇品項後，顯示最早入庫儲位。</span></div>
+            <div class="form-section-title form-section-spaced"><span>02</span><h2>出貨數量</h2></div>
+            <div class="form-grid">
+              <label class="form-field"><span>出貨箱數</span><input name="quantity" type="number" min="1" step="1" value="1" required></label>
+              <label class="form-field"><span>出貨範圍</span><select name="warehouseId" id="shipment-warehouse"><option value="all">依 FIFO 跨倉</option><option value="1">限一號冷凍庫</option><option value="2">限二號冷凍庫</option></select></label>
+            </div>
+            <div class="form-actions"><button class="button button-primary" type="submit">確認出貨 <span aria-hidden="true">→</span></button><span class="form-hint">出貨與異動紀錄同步完成</span></div>
+          </form>
+          <aside class="operation-aside fifo-aside">
+            <span class="aside-number">FIRST IN / FIRST OUT</span>
+            <h2>先進先出，不用靠記憶。</h2>
+            <p>確認出貨前，先看系統建議的最早入庫批次。送出後會依序扣除該儲位數量，必要時接續下一批，並留下異動紀錄。</p>
+            <div class="aside-rule"></div><span class="aside-caption">依入庫時間排序 · 跨倉可選</span>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="count-view" aria-labelledby="count-title" hidden>
+        <div class="page-heading">
+          <div><p class="eyebrow">CYCLE COUNT / RECONCILIATION</p><h1 id="count-title">定期盤點<span class="heading-period">。</span></h1><p class="heading-note">逐批核對實物數量；盤點時可直接登記腐敗報廢。</p></div>
+          <span class="page-stamp">倉儲作業 <b>04</b></span>
+        </div>
+        <div class="count-toolbar">
+          <label class="select-field"><span>選擇盤點冷凍庫</span><select id="count-warehouse"><option value="1">一號冷凍庫</option><option value="2">二號冷凍庫</option></select></label>
+          <button class="button button-outline" id="load-count-button" type="button">載入盤點清單 <span aria-hidden="true">↻</span></button>
+        </div>
+        <form id="count-form" class="count-form" hidden>
+          <div class="count-intro"><span class="live-dot"></span><p id="count-description">盤點清單已載入。若現場數量正確，保留實際數量；腐敗箱數填入報廢欄。</p></div>
+          <div class="table-frame count-table-frame"><table class="stock-table count-table"><thead><tr><th>品項 / 儲位</th><th class="number-cell">系統數量</th><th class="number-cell">實際數量</th><th class="number-cell">腐敗報廢</th></tr></thead><tbody id="count-rows"></tbody></table></div>
+          <div class="form-actions count-actions"><button class="button button-primary" type="submit">完成盤點並更新庫存 <span aria-hidden="true">→</span></button><span class="form-hint">送出後即記錄盤點差異與報廢</span></div>
+        </form>
+        <div class="count-empty" id="count-empty"><span class="count-empty-mark">C</span><h2>先選擇冷凍庫，開始今日盤點。</h2><p>載入後會列出該倉目前有庫存的所有批次。</p></div>
+      </section>
+
+      <footer class="page-footer"><span>竹南冷凍公司</span><span>庫存以實際盤點與現場作業為準</span></footer>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
